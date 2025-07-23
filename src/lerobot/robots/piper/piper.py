@@ -78,17 +78,18 @@ class Piper(Robot):
         return obs_dict
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+        # map the action from the leader to joints for the follower
         # This will handle both key styles.
-        # For teleop, action.get('shoulder_pan') will work. For stop(), action.get('joint_0.pos') will work.
+        # For teleop, action.get('shoulder_pan.pos') will work. For stop(), action.get('joint_0.pos') will work.
         # The second get() acts as a fallback.
         positions = [
-            action.get("shoulder_pan", action.get("joint_0.pos")),
-            action.get("shoulder_lift", action.get("joint_1.pos")),
-            action.get("elbow_flex", action.get("joint_2.pos")),
+            action.get("shoulder_pan.pos", action.get("joint_0.pos", 0)),
+            action.get("shoulder_lift.pos", action.get("joint_1.pos", 0)),
+            action.get("elbow_flex.pos", action.get("joint_2.pos", 0)),
             action.get("joint_3.pos", 0),
-            action.get("wrist_flex", action.get("joint_4.pos")),
-            action.get("wrist_roll", action.get("joint_5.pos")),
-            action.get("gripper", action.get("joint_6.pos")),
+            action.get("wrist_flex.pos", action.get("joint_4.pos", 0)),
+            action.get("wrist_roll.pos", action.get("joint_5.pos", 0)),
+            action.get("gripper.pos", action.get("joint_6.pos", 0)),
         ]
 
         self.sdk.set_joint_positions(positions)

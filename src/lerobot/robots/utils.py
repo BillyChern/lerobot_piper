@@ -51,7 +51,7 @@ def make_robot_from_config(config: "RobotConfig") -> "Robot":  # noqa: F821
             return robot_cls(config)
 
     logging.error(f"No matching robot class found for type: {config.type}")
-    raise ValueError(config.type)
+        raise ValueError(config.type)
 
 
 def ensure_safe_goal_position(

@@ -69,8 +69,7 @@ def main(cfg: PiperHostScriptConfig):
                 watchdog_active = False
 
                 data = json.loads(msg)
-                action = {k: v for k, v in data.items() if k in robot.action_space.keys()}
-                _action_sent = robot.send_action(action)
+                _action_sent = robot.send_action(data)
 
             except zmq.Again:
                 pass  # No command received yet, just continue waiting.
