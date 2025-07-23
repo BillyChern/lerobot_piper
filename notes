@@ -1,3 +1,5 @@
+python -m lerobot.robots.piper.piper_host --robot.type=piper --robot.port=right_piper --robot.id=FOLLOWER
+
 conda activate lerobot
 
 python -m lerobot.teleoperate \
