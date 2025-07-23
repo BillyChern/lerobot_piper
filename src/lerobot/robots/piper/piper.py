@@ -14,16 +14,9 @@ from .piper_sdk_interface import PiperSDKInterface
 @dataclass
 class PiperConfig(RobotConfig):
     port: str
-    cameras: dict[str, CameraConfig] = field(
-        default_factory=lambda: {
-            "cam_1": OpenCVCameraConfig(
-                index_or_path=0,
-                fps=30,
-                width=640,
-                height=480,
-            ),
-        }
-    )
+    cameras: dict[str, CameraConfig] = field(default_factory=dict)
+
+
 
 
 class Piper(Robot):
@@ -85,16 +78,22 @@ class Piper(Robot):
         return obs_dict
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
-        # map the action from the leader to joints for the follower
+        # This will handle both key styles.
+        # For teleop, action.get('shoulder_pan') will work. For stop(), action.get('joint_0.pos') will work.
+        # The second get() acts as a fallback.
         positions = [
-            action.get("shoulder_pan.pos"),
-            action.get("shoulder_lift.pos"),
-            action.get("elbow_flex.pos"),
-            0,
-            action.get("wrist_flex.pos"),
-            action.get("wrist_roll.pos"),
-            action.get("gripper.pos"),
+            action.get("shoulder_pan", action.get("joint_0.pos")),
+            action.get("shoulder_lift", action.get("joint_1.pos")),
+            action.get("elbow_flex", action.get("joint_2.pos")),
+            action.get("joint_3.pos", 0),
+            action.get("wrist_flex", action.get("joint_4.pos")),
+            action.get("wrist_roll", action.get("joint_5.pos")),
+            action.get("gripper", action.get("joint_6.pos")),
         ]
 
         self.sdk.set_joint_positions(positions)
         return action
+
+    def stop(self):
+        current_pos = self.sdk.get_status()
+        self.send_action(current_pos)
