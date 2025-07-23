@@ -50,34 +50,39 @@ def main(cfg: PiperHostScriptConfig):
     logging.info("Starting HostAgent")
     host = PiperHost(cfg.host)
 
+    first_command_received = False
     last_cmd_time = time.time()
     watchdog_active = False
     logging.info("Waiting for commands...")
     try:
         # Business logic
-        start = time.perf_counter()
-        duration = 0
-        while duration < host.connection_time_s:
+        while True:
             loop_start_time = time.time()
             try:
                 msg = host.zmq_cmd_socket.recv_string(zmq.NOBLOCK)
+
+                if not first_command_received:
+                    logging.info("First command received. Starting teleoperation.")
+                    first_command_received = True
+
+                last_cmd_time = time.time()
+                watchdog_active = False
+
                 data = json.loads(msg)
                 action = {k: v for k, v in data.items() if k in robot.action_space.keys()}
                 _action_sent = robot.send_action(action)
-                last_cmd_time = time.time()
-                watchdog_active = False
+
             except zmq.Again:
-                if not watchdog_active:
-                    logging.warning("No command available")
+                pass  # No command received yet, just continue waiting.
             except (json.JSONDecodeError, TypeError) as e:
                 logging.error(f"Message parsing failed: {e}")
             except Exception as e:
                 logging.error(f"An unexpected error occurred: {e}")
 
             now = time.time()
-            if (now - last_cmd_time > host.watchdog_timeout_ms / 1000) and not watchdog_active:
+            if first_command_received and (now - last_cmd_time > host.watchdog_timeout_ms / 1000) and not watchdog_active:
                 logging.warning(
-                    f"Command not received for more than {host.watchdog_timeout_ms} milliseconds. Stopping the base."
+                    f"Command not received for more than {host.watchdog_timeout_ms} milliseconds. Stopping the robot."
                 )
                 watchdog_active = True
                 robot.stop()
@@ -105,8 +110,6 @@ def main(cfg: PiperHostScriptConfig):
             elapsed = time.time() - loop_start_time
 
             time.sleep(max(1 / host.max_loop_freq_hz - elapsed, 0))
-            duration = time.perf_counter() - start
-        print("Cycle time reached.")
 
     except KeyboardInterrupt:
         print("Keyboard interrupt received. Exiting...")
