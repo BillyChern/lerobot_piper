@@ -9,5 +9,5 @@ from . import piper
 from . import so100_follower
 from . import so101_follower
 
-# This will register PiperClientConfig
-from .piper import PiperClient
+# This will register PiperClientConfig by importing the module where it's defined.
+from .piper.piper_client import PiperClient

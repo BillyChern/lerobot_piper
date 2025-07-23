@@ -14,59 +14,44 @@
 
 import logging
 from pprint import pformat
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config import RobotConfig
+    from .robot import Robot
 
 from lerobot.robots import RobotConfig
 
 from .robot import Robot
 
 
-def make_robot_from_config(config: RobotConfig) -> Robot:
-    if config.type == "koch_follower":
-        from .koch_follower import KochFollower
+def make_robot_from_config(config: "RobotConfig") -> "Robot":  # noqa: F821
+    """Make a robot from a `RobotConfig` object."""
+    from .robot import Robot  # noqa: F801
 
-        return KochFollower(config)
-    elif config.type == "so100_follower":
-        from .so100_follower import SO100Follower
+    logging.info(f"Attempting to create robot from config of type: {type(config)}")
+    logging.info(f"Config details: {config}")
 
-        return SO100Follower(config)
-    elif config.type == "so100_follower_end_effector":
-        from .so100_follower import SO100FollowerEndEffector
+    subclasses = Robot.__subclasses__()
+    logging.info(f"Available Robot subclasses: {subclasses}")
 
-        return SO100FollowerEndEffector(config)
-    elif config.type == "so101_follower":
-        from .so101_follower import SO101Follower
+    # This is the new way of instantiating robots.
+    for robot_cls in subclasses:
+        logging.info(f"Checking robot class: {robot_cls} with config_class: {getattr(robot_cls, 'config_class', None)}")
+        if getattr(robot_cls, "config_class", None) == config.__class__:
+            logging.info(f"Found matching robot class by config_class: {robot_cls}")
+            return robot_cls(config)
 
-        return SO101Follower(config)
-    elif config.type == "lekiwi":
-        from .lekiwi import LeKiwi
+    # The following is for backward compatibility with the old way of defining robots.
+    # TODO(rcadene): remove this when all robots are migrated.
+    for robot_cls in subclasses:
+        logging.info(f"Checking robot class: {robot_cls} with name: {getattr(robot_cls, 'name', None)}")
+        if getattr(robot_cls, "name", None) == config.type:
+            logging.info(f"Found matching robot class by name: {robot_cls}")
+            return robot_cls(config)
 
-        return LeKiwi(config)
-    elif config.type == "piper":
-        from .piper import Piper
-
-        return Piper(config)
-    elif config.type == "stretch3":
-        from .stretch3 import Stretch3Robot
-
-        return Stretch3Robot(config)
-    elif config.type == "viperx":
-        from .viperx import ViperX
-
-        return ViperX(config)
-    elif config.type == "hope_jr_hand":
-        from .hope_jr import HopeJrHand
-
-        return HopeJrHand(config)
-    elif config.type == "hope_jr_arm":
-        from .hope_jr import HopeJrArm
-
-        return HopeJrArm(config)
-    elif config.type == "mock_robot":
-        from tests.mocks.mock_robot import MockRobot
-
-        return MockRobot(config)
-    else:
-        raise ValueError(config.type)
+    logging.error(f"No matching robot class found for type: {config.type}")
+    raise ValueError(config.type)
 
 
 def ensure_safe_goal_position(
