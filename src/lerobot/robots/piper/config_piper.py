@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass, field
 
+from lerobot.cameras import CameraConfig
 from lerobot.robots.config import RobotConfig
 
 
@@ -24,6 +25,7 @@ class PiperClientConfig(RobotConfig):
     remote_ip: str
     port_zmq_cmd: int = 5555
     port_zmq_observations: int = 5556
+    cameras: dict[str, CameraConfig] = field(default_factory=dict)
 
     polling_timeout_ms: int = 15
     connect_timeout_s: int = 5 
