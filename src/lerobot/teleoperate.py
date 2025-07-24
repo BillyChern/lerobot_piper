@@ -97,6 +97,10 @@ class TeleoperateConfig:
     right_arm_port_teleop: str = "/dev/ttyACM1"
     teleop_calibration_dir: Path | None = None
 
+    # Calibration file base names (without .json) when using bimanual teleop
+    left_arm_calib_name: str = "left_arm"
+    right_arm_calib_name: str = "right_arm"
+
     # General parameters
     bimanual: bool = False
     fps: int = 60
@@ -153,6 +157,8 @@ def teleoperate(cfg: TeleoperateConfig):
             left_arm=SO101LeaderConfig(port=cfg.left_arm_port_teleop),
             right_arm=SO101LeaderConfig(port=cfg.right_arm_port_teleop),
             calibration_dir=cfg.teleop_calibration_dir,
+            left_calib_name=cfg.left_arm_calib_name,
+            right_calib_name=cfg.right_arm_calib_name,
         )
     else:
         if cfg.remote_ip:

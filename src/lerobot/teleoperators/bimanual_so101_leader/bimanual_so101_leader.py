@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from dataclasses import replace
 
 from lerobot.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from lerobot.teleoperators.teleoperator import Teleoperator
@@ -20,8 +21,21 @@ class BimanualSO101Leader(Teleoperator):
     def __init__(self, config: BimanualSO101LeaderConfig):
         super().__init__(config)
         self.config = config
-        self.left_arm = SO101Leader(config.left_arm)
-        self.right_arm = SO101Leader(config.right_arm)
+
+        # Build per-arm configs with proper calibration directory and id
+        left_cfg = replace(
+            config.left_arm,
+            id=config.left_calib_name,
+            calibration_dir=config.calibration_dir,
+        )
+        right_cfg = replace(
+            config.right_arm,
+            id=config.right_calib_name,
+            calibration_dir=config.calibration_dir,
+        )
+
+        self.left_arm = SO101Leader(left_cfg)
+        self.right_arm = SO101Leader(right_cfg)
 
     @property
     def action_features(self) -> dict[str, type]:
@@ -46,10 +60,6 @@ class BimanualSO101Leader(Teleoperator):
         if self.is_connected:
             raise DeviceAlreadyConnectedError(f"{self} already connected")
 
-        if self.config.calibration_dir:
-            self.left_arm.config.calibration_dir = self.config.calibration_dir / "left_arm.json"
-            self.right_arm.config.calibration_dir = self.config.calibration_dir / "right_arm.json"
-
         self.left_arm.connect(calibrate=calibrate)
         self.right_arm.connect(calibrate=calibrate)
 
@@ -60,8 +70,11 @@ class BimanualSO101Leader(Teleoperator):
         return self.left_arm.is_calibrated and self.right_arm.is_calibrated
 
     def calibrate(self) -> None:
+        logger.info("\n=== Calibrating LEFT arm ===")
         self.left_arm.calibrate()
+        logger.info("\n=== LEFT arm calibration complete. Proceeding with RIGHT arm ===")
         self.right_arm.calibrate()
+        logger.info("\n=== Calibration completed for both arms ===")
 
     def configure(self) -> None:
         self.left_arm.configure()
