@@ -26,6 +26,7 @@ from lerobot.motors.feetech import (
 
 from ..teleoperator import Teleoperator
 from .config_so101_leader import SO101LeaderConfig
+from serial import SerialException
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +72,15 @@ class SO101Leader(Teleoperator):
         if self.is_connected:
             raise DeviceAlreadyConnectedError(f"{self} already connected")
 
-        self.bus.connect()
-        if not self.is_calibrated and calibrate:
+        try:
+            self.bus.connect(handshake=False)
+        except SerialException as e:
+            raise DeviceNotConnectedError(
+                f"Failed to connect to the leader arm on port {self.config.port}. "
+                "Please make sure the device is connected and the port is correct."
+            ) from e
+
+        if self.is_connected and calibrate and not self.is_calibrated:
             self.calibrate()
 
         self.configure()
