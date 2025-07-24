@@ -95,6 +95,11 @@ class BimanualPiperFollower(Robot):
         left_action = {key.removeprefix("left_"): val for key, val in action.items() if key.startswith("left_")}
         right_action = {key.removeprefix("right_"): val for key, val in action.items() if key.startswith("right_")}
 
+        if not left_action:
+            logger.warning("Received action without left_ keys – left arm will not move.")
+        if not right_action:
+            logger.warning("Received action without right_ keys – right arm will not move.")
+
         self.left_arm.send_action(left_action)
         self.right_arm.send_action(right_action)
 

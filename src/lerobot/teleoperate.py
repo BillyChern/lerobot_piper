@@ -116,6 +116,10 @@ def teleop_loop(
     while True:
         loop_start = time.perf_counter()
         action = teleop.get_action()
+        if not action:
+            print("Waiting for teleoperator data...")
+            busy_wait(1 / fps)
+            continue
         if display_data:
             observation = robot.get_observation()
             log_rerun_data(observation, action)
@@ -159,6 +163,7 @@ def teleoperate(cfg: TeleoperateConfig):
             calibration_dir=cfg.teleop_calibration_dir,
             left_calib_name=cfg.left_arm_calib_name,
             right_calib_name=cfg.right_arm_calib_name,
+            id="bimanual",
         )
     else:
         if cfg.remote_ip:
