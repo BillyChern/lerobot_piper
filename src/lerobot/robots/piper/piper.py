@@ -8,6 +8,7 @@ from lerobot.cameras.opencv import OpenCVCameraConfig
 from lerobot.robots import Robot, RobotConfig
 
 from .piper_sdk_interface import PiperSDKInterface
+from lerobot.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 
 
 @RobotConfig.register_subclass("piper")
@@ -25,7 +26,9 @@ class Piper(Robot):
 
     def __init__(self, config: PiperConfig):
         super().__init__(config)
-        self.sdk = PiperSDKInterface(port=config.port)
+        self.config = config
+        self.sdk = None
+        self._is_connected = False
         self.cameras = make_cameras_from_configs(config.cameras)
 
     @property
@@ -46,19 +49,24 @@ class Piper(Robot):
 
     @property
     def is_connected(self) -> bool:
-        # Assume always connected after SDK init
-        return True
+        return self._is_connected
 
     def connect(self, calibrate: bool = True) -> None:
-        # Already connected in SDK init
+        if self._is_connected:
+            raise DeviceAlreadyConnectedError(f"{self} is already connected.")
+        self.sdk = PiperSDKInterface(port=self.config.port)
+        self._is_connected = True
         for cam in self.cameras.values():
             cam.connect()
         self.configure()
 
     def disconnect(self) -> None:
+        if not self._is_connected:
+            return
         self.sdk.disconnect()
         for cam in self.cameras.values():
             cam.disconnect()
+        self._is_connected = False
 
     @property
     def is_calibrated(self) -> bool:
@@ -71,6 +79,8 @@ class Piper(Robot):
         pass
 
     def get_observation(self) -> dict[str, Any]:
+        if not self._is_connected:
+            raise DeviceNotConnectedError(f"{self} is not connected.")
         obs_dict = self.sdk.get_status()
 
         for cam_key, cam in self.cameras.items():
@@ -78,6 +88,8 @@ class Piper(Robot):
         return obs_dict
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+        if not self._is_connected:
+            raise DeviceNotConnectedError(f"{self} is not connected.")
         # map the action from the leader to joints for the follower
         # This will handle both key styles.
         # For teleop, action.get('shoulder_pan.pos') will work. For stop(), action.get('joint_0.pos') will work.
@@ -96,5 +108,7 @@ class Piper(Robot):
         return action
 
     def stop(self):
+        if not self._is_connected:
+            return
         current_pos = self.sdk.get_status()
         self.send_action(current_pos)

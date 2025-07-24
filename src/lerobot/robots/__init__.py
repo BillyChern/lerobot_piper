@@ -8,6 +8,8 @@ from . import koch_follower
 from . import piper
 from . import so100_follower
 from . import so101_follower
+from . import bimanual_piper_follower
 
 # This will register PiperClientConfig by importing the module where it's defined.
 from .piper.piper_client import PiperClient
+from .bimanual_piper_follower.bimanual_piper_client import BimanualPiperClient

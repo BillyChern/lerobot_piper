@@ -1,7 +1,13 @@
-python -m lerobot.robots.piper.piper_host --robot.type=piper --robot.port=right_piper --robot.id=FOLLOWER
-
 conda activate lerobot
 
+cd /home/intuition/meta-tele/lerobot_piper
+
+
+# launch the server (On robot pc)
+python -m lerobot.robots.piper.piper_host --robot.type=piper --robot.port=right_piper --robot.id=FOLLOWER
+
+
+# launch the client (on laptop)
 python -m lerobot.teleoperate \
     --robot.type=piper \
     --robot.port=right_piper \

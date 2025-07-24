@@ -32,7 +32,7 @@ python -m lerobot.teleoperate \
 
 import logging
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pprint import pformat
 
 import draccus
@@ -63,22 +63,47 @@ from lerobot.teleoperators import (  # noqa: F401
 from lerobot.utils.robot_utils import busy_wait
 from lerobot.utils.utils import init_logging, move_cursor_up
 from lerobot.utils.visualization_utils import _init_rerun, log_rerun_data
+from lerobot.robots.bimanual_piper_follower.config_bimanual_piper_follower import BimanualPiperFollowerConfig, BimanualPiperClientConfig
+from lerobot.teleoperators.bimanual_so101_leader.config_bimanual_so101_leader import BimanualSO101LeaderConfig
+from lerobot.robots.piper.piper import PiperConfig
+from lerobot.robots.piper.piper_client import PiperClientConfig
+from lerobot.teleoperators.so101_leader.config_so101_leader import SO101LeaderConfig
 
 
 @dataclass
-class TeleoperateConfig:
-    # TODO: pepijn, steven: if more robots require multiple teleoperators (like lekiwi) its good to make this possibele in teleop.py and record.py with List[Teleoperator]
-    teleop: TeleoperatorConfig
-    robot: RobotConfig
-    # Limit the maximum frames per second.
+class BimanualTeleoperateConfig:
+    """A flat config for bimanual teleoperation to avoid draccus recursion."""
+    robot_type: str = "bimanual_piper_client"
+    remote_ip: str = "100.117.16.87"
+    teleop_type: str = "bimanual_so101_leader"
+    left_leader_port: str = "/dev/ttyACM0"
+    right_leader_port: str = "/dev/ttyACM1"
     fps: int = 60
-    teleop_time_s: float | None = None
-    # Display all cameras on screen
+    display_data: bool = False
+
+@dataclass
+class TeleoperateConfig:
+    """A flat config for the teleoperation script to avoid draccus recursion."""
+    # Robot parameters
+    robot_type: str = "piper"
+    remote_ip: str | None = None
+    left_arm_port_robot: str = "left_piper"
+    right_arm_port_robot: str = "right_piper"
+
+    # Teleop parameters
+    teleop_type: str = "so101_leader"
+    left_arm_port_teleop: str = "/dev/ttyACM0"
+    right_arm_port_teleop: str = "/dev/ttyACM1"
+
+    # General parameters
+    bimanual: bool = False
+    fps: int = 60
+    teleop_time_s: int | None = None
     display_data: bool = False
 
 
 def teleop_loop(
-    teleop: Teleoperator, robot: Robot, fps: int, display_data: bool = False, duration: float | None = None
+    teleop: Teleoperator, robot: Robot, fps: int, display_data: bool = False, duration: int | None = None
 ):
     display_len = max(len(key) for key in robot.action_features)
     start = time.perf_counter()
@@ -114,8 +139,27 @@ def teleoperate(cfg: TeleoperateConfig):
     if cfg.display_data:
         _init_rerun(session_name="teleoperation")
 
-    teleop = make_teleoperator_from_config(cfg.teleop)
-    robot = make_robot_from_config(cfg.robot)
+    if cfg.bimanual:
+        if cfg.remote_ip:
+            robot_config = BimanualPiperClientConfig(remote_ip=cfg.remote_ip)
+        else:
+            robot_config = BimanualPiperFollowerConfig(
+                left_arm=PiperConfig(port=cfg.left_arm_port_robot),
+                right_arm=PiperConfig(port=cfg.right_arm_port_robot),
+            )
+        teleop_config = BimanualSO101LeaderConfig(
+            left_arm=SO101LeaderConfig(port=cfg.left_arm_port_teleop),
+            right_arm=SO101LeaderConfig(port=cfg.right_arm_port_teleop),
+        )
+    else:
+        if cfg.remote_ip:
+            robot_config = PiperClientConfig(remote_ip=cfg.remote_ip)
+        else:
+            robot_config = PiperConfig(port=cfg.right_arm_port_robot)
+        teleop_config = SO101LeaderConfig(port=cfg.right_arm_port_teleop)
+
+    robot = make_robot_from_config(robot_config)
+    teleop = make_teleoperator_from_config(teleop_config)
 
     teleop.connect()
     robot.connect()

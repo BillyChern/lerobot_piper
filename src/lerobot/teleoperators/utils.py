@@ -12,54 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .config import TeleoperatorConfig
-from .teleoperator import Teleoperator
+import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config import TeleoperatorConfig
+    from .teleoperator import Teleoperator
 
 
-def make_teleoperator_from_config(config: TeleoperatorConfig) -> Teleoperator:
-    if config.type == "keyboard":
-        from .keyboard import KeyboardTeleop
+def make_teleoperator_from_config(config: "TeleoperatorConfig") -> "Teleoperator":  # noqa: F821
+    """Make a teleoperator from a `TeleoperatorConfig` object."""
+    from .teleoperator import Teleoperator
 
-        return KeyboardTeleop(config)
-    elif config.type == "koch_leader":
-        from .koch_leader import KochLeader
+    subclasses = Teleoperator.__subclasses__()
+    logging.info(f"Available Teleoperator subclasses: {subclasses}")
 
-        return KochLeader(config)
-    elif config.type == "so100_leader":
-        from .so100_leader import SO100Leader
+    for teleop_cls in subclasses:
+        logging.info(f"Checking teleop class: {teleop_cls} with config_class: {getattr(teleop_cls, 'config_class', None)}")
+        if getattr(teleop_cls, "config_class", None) == config.__class__:
+            logging.info(f"Found matching teleop class by config_class: {teleop_cls}")
+            return teleop_cls(config)
 
-        return SO100Leader(config)
-    elif config.type == "so101_leader":
-        from .so101_leader import SO101Leader
+    for teleop_cls in subclasses:
+        logging.info(f"Checking teleop class: {teleop_cls} with name: {getattr(teleop_cls, 'name', None)}")
+        if getattr(teleop_cls, "name", None) == config.type:
+            logging.info(f"Found matching teleop class by name: {teleop_cls}")
+            return teleop_cls(config)
 
-        return SO101Leader(config)
-    elif config.type == "stretch3":
-        from .stretch3_gamepad import Stretch3GamePad
-
-        return Stretch3GamePad(config)
-    elif config.type == "widowx":
-        from .widowx import WidowX
-
-        return WidowX(config)
-    elif config.type == "mock_teleop":
-        from tests.mocks.mock_teleop import MockTeleop
-
-        return MockTeleop(config)
-    elif config.type == "gamepad":
-        from .gamepad.teleop_gamepad import GamepadTeleop
-
-        return GamepadTeleop(config)
-    elif config.type == "keyboard_ee":
-        from .keyboard.teleop_keyboard import KeyboardEndEffectorTeleop
-
-        return KeyboardEndEffectorTeleop(config)
-    elif config.type == "homunculus_glove":
-        from .homunculus import HomunculusGlove
-
-        return HomunculusGlove(config)
-    elif config.type == "homunculus_arm":
-        from .homunculus import HomunculusArm
-
-        return HomunculusArm(config)
-    else:
-        raise ValueError(config.type)
+    logging.error(f"No matching teleop class found for type: {config.type}")
+    raise ValueError(config.type)
