@@ -77,6 +77,7 @@ def main(cfg: BimanualPiperHostConfig):
                 last_cmd_time = time.time()
                 watchdog_active = False
                 data = json.loads(msg)
+                logging.debug(f"[HOST] Received action (keys={list(data.keys())}): {data}")
                 robot.send_action(data)
 
             except zmq.Again:

@@ -1,4 +1,5 @@
 import json
+import logging
 from functools import cached_property
 from typing import Any
 
@@ -101,5 +102,6 @@ class BimanualPiperClient(Robot):
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
         """Send an action to the remote host."""
+        logging.debug(f"[CLIENT] Sending action (keys={list(action.keys())}): {action}")
         self.zmq_cmd_socket.send_string(json.dumps(action))
         return action 

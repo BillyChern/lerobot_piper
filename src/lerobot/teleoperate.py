@@ -124,6 +124,12 @@ def teleop_loop(
             observation = robot.get_observation()
             log_rerun_data(observation, action)
 
+        # Debug print of action keys each loop
+        if len(action) < 10:
+            print(f"DEBUG Action keys: {list(action.keys())}")
+        else:
+            print(f"DEBUG Action keys: {list(action.keys())[:10]} ... total {len(action)} keys")
+
         robot.send_action(action)
         dt_s = time.perf_counter() - loop_start
         busy_wait(1 / fps - dt_s)
