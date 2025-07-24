@@ -9,4 +9,5 @@ from lerobot.teleoperators.so101_leader.config_so101_leader import SO101LeaderCo
 @dataclass
 class BimanualSO101LeaderConfig(TeleoperatorConfig):
     left_arm: SO101LeaderConfig = field(default_factory=lambda: SO101LeaderConfig(port="/dev/ttyUSB0"))
-    right_arm: SO101LeaderConfig = field(default_factory=lambda: SO101LeaderConfig(port="/dev/ttyUSB1")) 
+    right_arm: SO101LeaderConfig = field(default_factory=lambda: SO101LeaderConfig(port="/dev/ttyUSB1"))
+    calibration_dir: Path | None = None 

@@ -16,3 +16,24 @@ python -m lerobot.teleoperate \
     --teleop.type=so101_leader \
     --teleop.port=/dev/ttyACM0 \
     --teleop.id=LEADER
+
+
+
+
+TWO ARMS
+
+python -m lerobot.robots.bimanual_piper_follower.bimanual_piper_host     --left_arm_port=left_piper     --right_arm_port=right_piper
+
+
+
+# old version
+python -m lerobot.teleoperate     --bimanual=True     --remote_ip=100.117.16.87     --left_arm_port_teleop=/dev/ttyACM0     --right_arm_port_teleop=/dev/ttyACM1
+
+
+# new version
+python -m lerobot.teleoperate \
+     --bimanual=True \
+     --remote_ip=100.117.16.87 \
+     --left_arm_port_teleop=/dev/ttyACM0 \
+     --right_arm_port_teleop=/dev/ttyACM1 \
+     --teleop_calibration_dir=lerobot_piper/calibration

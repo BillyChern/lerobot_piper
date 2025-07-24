@@ -46,6 +46,10 @@ class BimanualSO101Leader(Teleoperator):
         if self.is_connected:
             raise DeviceAlreadyConnectedError(f"{self} already connected")
 
+        if self.config.calibration_dir:
+            self.left_arm.config.calibration_dir = self.config.calibration_dir / "left_arm.json"
+            self.right_arm.config.calibration_dir = self.config.calibration_dir / "right_arm.json"
+
         self.left_arm.connect(calibrate=calibrate)
         self.right_arm.connect(calibrate=calibrate)
 

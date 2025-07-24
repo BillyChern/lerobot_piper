@@ -34,6 +34,7 @@ import logging
 import time
 from dataclasses import asdict, dataclass, field
 from pprint import pformat
+from pathlib import Path
 
 import draccus
 import rerun as rr
@@ -94,6 +95,7 @@ class TeleoperateConfig:
     teleop_type: str = "so101_leader"
     left_arm_port_teleop: str = "/dev/ttyACM0"
     right_arm_port_teleop: str = "/dev/ttyACM1"
+    teleop_calibration_dir: Path | None = None
 
     # General parameters
     bimanual: bool = False
@@ -150,13 +152,14 @@ def teleoperate(cfg: TeleoperateConfig):
         teleop_config = BimanualSO101LeaderConfig(
             left_arm=SO101LeaderConfig(port=cfg.left_arm_port_teleop),
             right_arm=SO101LeaderConfig(port=cfg.right_arm_port_teleop),
+            calibration_dir=cfg.teleop_calibration_dir,
         )
     else:
         if cfg.remote_ip:
             robot_config = PiperClientConfig(remote_ip=cfg.remote_ip)
         else:
             robot_config = PiperConfig(port=cfg.right_arm_port_robot)
-        teleop_config = SO101LeaderConfig(port=cfg.right_arm_port_teleop)
+        teleop_config = SO101LeaderConfig(port=cfg.right_arm_port_teleop, calibration_dir=cfg.teleop_calibration_dir)
 
     robot = make_robot_from_config(robot_config)
     teleop = make_teleoperator_from_config(teleop_config)

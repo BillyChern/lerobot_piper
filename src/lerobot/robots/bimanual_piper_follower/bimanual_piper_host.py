@@ -19,12 +19,11 @@ class BimanualPiperHostConfig:
     right_arm_port: str = "right_piper"
     port_zmq_cmd: int = 5555
     port_zmq_observations: int = 5556
-    watchdog_timeout_ms: int = 500
     max_loop_freq_hz: int = 60
 
 
 class BimanualPiperHost:
-    def __init__(self, port_zmq_cmd, port_zmq_observations, watchdog_timeout_ms, max_loop_freq_hz):
+    def __init__(self, port_zmq_cmd, port_zmq_observations, max_loop_freq_hz):
         self.zmq_context = zmq.Context()
         self.zmq_cmd_socket = self.zmq_context.socket(zmq.PULL)
         self.zmq_cmd_socket.setsockopt(zmq.CONFLATE, 1)
@@ -34,7 +33,6 @@ class BimanualPiperHost:
         self.zmq_observation_socket.setsockopt(zmq.CONFLATE, 1)
         self.zmq_observation_socket.bind(f"tcp://*:{port_zmq_observations}")
 
-        self.watchdog_timeout_ms = watchdog_timeout_ms
         self.max_loop_freq_hz = max_loop_freq_hz
 
     def disconnect(self):
@@ -61,7 +59,6 @@ def main(cfg: BimanualPiperHostConfig):
     host = BimanualPiperHost(
         port_zmq_cmd=cfg.port_zmq_cmd,
         port_zmq_observations=cfg.port_zmq_observations,
-        watchdog_timeout_ms=cfg.watchdog_timeout_ms,
         max_loop_freq_hz=cfg.max_loop_freq_hz,
     )
 
@@ -90,9 +87,9 @@ def main(cfg: BimanualPiperHostConfig):
                 logging.error(f"An unexpected error occurred: {e}")
 
             now = time.time()
-            if first_command_received and (now - last_cmd_time > host.watchdog_timeout_ms / 1000) and not watchdog_active:
+            if first_command_received and (now - last_cmd_time > 50_000_000) and not watchdog_active:
                 logging.warning(
-                    f"Command not received for more than {host.watchdog_timeout_ms} milliseconds. Stopping the robot."
+                    "Command not received for a long time. Stopping the robot."
                 )
                 watchdog_active = True
                 # How to stop a bimanual robot? Maybe stop each arm.
